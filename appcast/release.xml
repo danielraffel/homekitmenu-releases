@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
     <channel>
         <title>HomeKit Menu - Release Channel</title>
-        <link>https://danielraffel.github.io/homekitmenu-releases/appcast/release.xml</link>
+        <link>https://www.generouscorp.com/homekitmenu-releases/appcast/release.xml</link>
         <description>Release updates for HomeKit Menu</description>
         <language>en</language>
     </channel>

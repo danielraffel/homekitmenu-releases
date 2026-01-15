@@ -23,7 +23,7 @@ BUNDLE_ID="com.danielraffel.HomeKitMenu"
 PROJECT_DIR="$HOME/Code/HomeKitMenu"
 RELEASES_DIR="$HOME/Code/homekitmenu-releases"
 GITHUB_REPO="danielraffel/homekitmenu-releases"
-APPCAST_URL="https://danielraffel.github.io/homekitmenu-releases/appcast/release.xml"
+APPCAST_URL="https://www.generouscorp.com/homekitmenu-releases/appcast/release.xml"
 
 # Signing identities - update these with your actual identities
 DEVELOPER_ID_APP="Developer ID Application: Daniel Raffel"
