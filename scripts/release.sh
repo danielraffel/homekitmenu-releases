@@ -160,11 +160,11 @@ xcodebuild -scheme "HomeKitMenu" \
 
 # Find the built app
 BUILD_DIR=$(xcodebuild -scheme "HomeKitMenu" -destination 'platform=macOS,variant=Mac Catalyst' -configuration Release -showBuildSettings 2>/dev/null | grep -m 1 'BUILT_PRODUCTS_DIR' | awk '{print $3}')
-APP_PATH="$BUILD_DIR/HomeKit Menu.app"
+APP_PATH="$BUILD_DIR/HomeKitMenu.app"
 
 if [[ ! -d "$APP_PATH" ]]; then
     # Try alternative path
-    APP_PATH="$HOME/Library/Developer/Xcode/DerivedData/HomeKitMenu-*/Build/Products/Release-maccatalyst/HomeKit Menu.app"
+    APP_PATH="$HOME/Library/Developer/Xcode/DerivedData/HomeKitMenu-*/Build/Products/Release-maccatalyst/HomeKitMenu.app"
     APP_PATH=$(ls -d $APP_PATH 2>/dev/null | head -1)
 fi
 
@@ -190,16 +190,19 @@ DMG_PATH="$OUTPUT_DIR/HomeKitMenu-$VERSION.dmg"
 # Remove old DMG if exists
 rm -f "$DMG_PATH"
 
-create-dmg \
-    --volname "HomeKit Menu $VERSION" \
-    --window-pos 200 120 \
-    --window-size 600 400 \
-    --icon-size 100 \
-    --icon "HomeKit Menu.app" 150 185 \
-    --app-drop-link 450 185 \
-    --hide-extension "HomeKit Menu.app" \
-    "$DMG_PATH" \
-    "$APP_PATH"
+# create-dmg (sindresorhus version) - simpler API
+create-dmg "$APP_PATH" "$OUTPUT_DIR" --overwrite --dmg-title="HomeKit Menu" 2>&1 || true
+
+# Rename to our versioned name
+CREATED_DMG=$(ls "$OUTPUT_DIR"/*.dmg 2>/dev/null | head -1)
+if [[ -n "$CREATED_DMG" && "$CREATED_DMG" != "$DMG_PATH" ]]; then
+    mv "$CREATED_DMG" "$DMG_PATH"
+fi
+
+if [[ ! -f "$DMG_PATH" ]]; then
+    echo -e "${RED}Error: DMG creation failed${NC}"
+    exit 1
+fi
 
 echo -e "${GREEN}✓ DMG created: $DMG_PATH${NC}"
 
