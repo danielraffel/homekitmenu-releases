@@ -117,5 +117,19 @@
             />
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
         </item>
+        <item>
+            <title>HomeKit Menu v1.0.8 (build 10008)</title>
+            <sparkle:releaseNotesLink>https://github.com/danielraffel/homekitmenu-releases/releases/tag/v1.0.8</sparkle:releaseNotesLink>
+            <pubDate>Wed, 14 Jan 2026 20:38:57 -0800</pubDate>
+            <enclosure
+                url="https://github.com/danielraffel/homekitmenu-releases/releases/download/v1.0.8/HomeKitMenu-1.0.8.dmg"
+                sparkle:version="10008"
+                sparkle:shortVersionString="1.0.8"
+                length="3079369"
+                type="application/octet-stream"
+                sparkle:edSignature="1bIubefAhATZmHMJd9QAVXKKUol1mzMlI4vnvRwboB5c3tZSIgABPuseu/U6c8WFuJSZnn+5apI3J7MZg3UgDA=="
+            />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
     </channel>
 </rss>
