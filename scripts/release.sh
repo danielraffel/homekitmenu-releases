@@ -175,10 +175,29 @@ fi
 
 echo -e "${GREEN}✓ Build complete: $APP_PATH${NC}"
 
-# Remove development provisioning profile (not valid for Developer ID distribution)
+# Replace development provisioning profile with Developer ID profile
 echo -e "\n${YELLOW}Preparing app for Developer ID distribution...${NC}"
+DEVID_PROFILE="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/HomeKitMenu_Developer_ID.provisionprofile"
+
+# Find the Developer ID profile by name if not at expected path
+if [[ ! -f "$DEVID_PROFILE" ]]; then
+    for profile in "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"/*.provisionprofile; do
+        if security cms -D -i "$profile" 2>/dev/null | grep -q "HomeKitMenu Developer ID"; then
+            DEVID_PROFILE="$profile"
+            break
+        fi
+    done
+fi
+
+if [[ ! -f "$DEVID_PROFILE" ]]; then
+    echo -e "${RED}Error: Developer ID provisioning profile not found${NC}"
+    echo "Please install 'HomeKitMenu Developer ID' profile from Apple Developer portal"
+    exit 1
+fi
+
 rm -f "$APP_PATH/Contents/embedded.provisionprofile"
-echo -e "${GREEN}✓ Removed development provisioning profile${NC}"
+cp "$DEVID_PROFILE" "$APP_PATH/Contents/embedded.provisionprofile"
+echo -e "${GREEN}✓ Embedded Developer ID provisioning profile${NC}"
 
 # Sign the app with entitlements
 echo -e "\n${YELLOW}Signing app with Developer ID...${NC}"
