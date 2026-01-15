@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HomeKit Menu - Control HomeKit from your Mac menu bar</title>
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="HomeKit Menu">
+    <meta property="og:description" content="Control your HomeKit devices from the Mac menu bar">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://www.generouscorp.com/homekitmenu-releases/">
+    <meta property="og:image" content="https://raw.githubusercontent.com/danielraffel/homekitmenu-releases/main/images/icon.png">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="HomeKit Menu">
+    <meta name="twitter:description" content="Control your HomeKit devices from the Mac menu bar">
+    <meta name="twitter:image" content="https://raw.githubusercontent.com/danielraffel/homekitmenu-releases/main/images/icon.png">
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                const res = await fetch("https://api.github.com/repos/danielraffel/homekitmenu-releases/releases/latest", {
+                    headers: { "Accept": "application/vnd.github+json" }
+                });
+                const json = await res.json();
+                const asset = (json.assets || []).find(a => a.name && a.name.endsWith(".dmg"));
+
+                if (asset && asset.browser_download_url) {
+                    const link = document.getElementById("downloadBtn");
+                    if (link) {
+                        link.href = asset.browser_download_url;
+                    }
+                }
+            } catch (e) {
+                console.log("Could not fetch latest release");
+            }
+        });
+    </script>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --text: #1d1d1f;
+            --text-secondary: #86868b;
+            --card-bg: #f5f5f7;
+            --accent: #0071e3;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #000000;
+                --text: #f5f5f7;
+                --text-secondary: #86868b;
+                --card-bg: #1d1d1f;
+                --accent: #2997ff;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 0 22px;
+        }
+
+        /* Hero */
+        .hero {
+            text-align: center;
+            padding: 80px 0 60px;
+        }
+
+        .logo {
+            width: 128px;
+            height: 128px;
+            margin-bottom: 24px;
+            border-radius: 22px;
+        }
+
+        h1 {
+            font-size: 48px;
+            font-weight: 600;
+            letter-spacing: -0.003em;
+            margin-bottom: 12px;
+        }
+
+        .tagline {
+            font-size: 21px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .download-btn {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 980px;
+            text-decoration: none;
+            font-size: 17px;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .download-btn:hover {
+            opacity: 0.85;
+        }
+
+        .requirements {
+            margin-top: 16px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Features */
+        .features {
+            padding: 60px 0;
+        }
+
+        .features h2 {
+            font-size: 32px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border-radius: 18px;
+            padding: 28px;
+        }
+
+        .feature-card h3 {
+            font-size: 19px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .feature-card p {
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+
+        /* Screenshots */
+        .screenshots {
+            padding: 60px 0;
+        }
+
+        .screenshots h2 {
+            font-size: 32px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        .screenshot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            justify-items: center;
+        }
+
+        .screenshot-item {
+            text-align: center;
+        }
+
+        .screenshot-item img {
+            max-width: 100%;
+            height: auto;
+            max-height: 400px;
+            border-radius: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+        }
+
+        .screenshot-item p {
+            margin-top: 12px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Theme demo */
+        .theme-section {
+            padding: 60px 0;
+            text-align: center;
+        }
+
+        .theme-section h2 {
+            font-size: 32px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+
+        .theme-section p {
+            font-size: 17px;
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+        }
+
+        .theme-badges {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            background: var(--card-bg);
+            padding: 8px 20px;
+            border-radius: 980px;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        /* Footer */
+        footer {
+            padding: 40px 0;
+            text-align: center;
+            border-top: 1px solid var(--card-bg);
+        }
+
+        footer p {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        footer a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <section class="hero">
+            <img src="images/icon.png" alt="HomeKit Menu" class="logo">
+            <h1>HomeKit Menu</h1>
+            <p class="tagline">Control your HomeKit devices from the Mac menu bar</p>
+            <a id="downloadBtn" href="https://github.com/danielraffel/homekitmenu-releases/releases/latest" class="download-btn">Download for Mac</a>
+            <p class="requirements">Requires macOS 14.0 or later</p>
+        </section>
+
+        <section class="features">
+            <h2>Features</h2>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <h3>Menu Bar Access</h3>
+                    <p>Quick access to all your HomeKit devices right from the menu bar. Toggle lights, switches, and more with a single click.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Apple Shortcuts</h3>
+                    <p>Run your favorite Apple Shortcuts directly from the menu. Organize by folders and access your automations instantly.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Keyboard Shortcuts</h3>
+                    <p>Assign custom keyboard shortcuts to any device. Control your home without touching the mouse.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Sensors &amp; Scenes</h3>
+                    <p>View sensor readings like temperature and humidity. Trigger HomeKit scenes with one click.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Room Organization</h3>
+                    <p>Devices automatically grouped by room. Select exactly which devices appear in your menu.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>Auto Updates</h3>
+                    <p>Built-in update checker keeps you on the latest version with in-app downloads.</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="theme-section">
+            <h2>Matches Your Mac</h2>
+            <p>Automatically adapts to your system appearance</p>
+            <div class="theme-badges">
+                <span class="badge">Light Mode</span>
+                <span class="badge">Dark Mode</span>
+                <span class="badge">System</span>
+            </div>
+        </section>
+
+        <section class="screenshots">
+            <h2>Screenshots</h2>
+            <div class="screenshot-grid">
+                <div class="screenshot-item">
+                    <img src="images/menu-dark.png" alt="Menu Bar Dropdown">
+                    <p>Menu Bar</p>
+                </div>
+                <div class="screenshot-item">
+                    <img src="images/select-devices.png" alt="Device Selection">
+                    <p>Select Devices</p>
+                </div>
+                <div class="screenshot-item">
+                    <img src="images/display-options.png" alt="Display Options">
+                    <p>Display Options</p>
+                </div>
+                <div class="screenshot-item">
+                    <img src="images/shortcuts.png" alt="Apple Shortcuts">
+                    <p>Apple Shortcuts</p>
+                </div>
+                <div class="screenshot-item">
+                    <img src="images/keyboard-shortcuts.png" alt="Keyboard Shortcuts">
+                    <p>Keyboard Shortcuts</p>
+                </div>
+                <div class="screenshot-item">
+                    <img src="images/automations.png" alt="Automations">
+                    <p>Automations</p>
+                </div>
+                <div class="screenshot-item">
+                    <img src="images/sensors.png" alt="Sensors">
+                    <p>Sensors</p>
+                </div>
+                <div class="screenshot-item">
+                    <img src="images/app-updates.png" alt="App Updates">
+                    <p>In-App Updates</p>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>Made by <a href="https://github.com/danielraffel">Daniel Raffel</a></p>
+        </div>
+    </footer>
+</body>
+</html>
