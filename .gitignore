@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Environment files with secrets
+.env
+*.env.local
+
+# Private keys
+*.pem
+*.key
+*_private_key
+
+# Build artifacts
+*.dmg
+*.zip
+*.pkg
+releases/

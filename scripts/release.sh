@@ -1,0 +1,287 @@
+#!/bin/bash
+set -euo pipefail
+
+# HomeKit Menu Release Script
+# Usage: ./release.sh [version] [--skip-notarize]
+#
+# Prerequisites:
+# - Xcode command line tools
+# - GitHub CLI (gh) authenticated
+# - Sparkle installed: brew install --cask sparkle
+# - create-dmg installed: brew install create-dmg
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m'
+
+# Configuration
+APP_NAME="HomeKit Menu"
+BUNDLE_ID="com.danielraffel.HomeKitMenu"
+PROJECT_DIR="$HOME/Code/HomeKitMenu"
+RELEASES_DIR="$HOME/Code/homekitmenu-releases"
+GITHUB_REPO="danielraffel/homekitmenu-releases"
+APPCAST_URL="https://danielraffel.github.io/homekitmenu-releases/appcast/release.xml"
+
+# Signing identities - update these with your actual identities
+DEVELOPER_ID_APP="Developer ID Application: Daniel Raffel"
+
+# Sparkle tools
+SPARKLE_SIGN="/opt/homebrew/Caskroom/sparkle/2.8.1/bin/sign_update"
+SPARKLE_KEY_FILE="$HOME/.sparkle_private_key"
+
+# Parse arguments
+VERSION="${1:-}"
+SKIP_NOTARIZE=false
+
+for arg in "$@"; do
+    case $arg in
+        --skip-notarize)
+            SKIP_NOTARIZE=true
+            shift
+            ;;
+    esac
+done
+
+if [[ -z "$VERSION" ]]; then
+    echo -e "${RED}Error: Version required${NC}"
+    echo "Usage: $0 <version> [--skip-notarize]"
+    echo "Example: $0 1.0.0"
+    exit 1
+fi
+
+# Validate version format
+if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+    echo -e "${RED}Error: Invalid version format. Use semantic versioning (e.g., 1.0.0)${NC}"
+    exit 1
+fi
+
+# Calculate build number
+IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+BUILD_NUMBER=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+
+echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${BLUE}  HomeKit Menu Release v$VERSION (Build $BUILD_NUMBER)${NC}"
+echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
+
+# Check prerequisites
+echo -e "\n${YELLOW}Checking prerequisites...${NC}"
+
+if ! command -v gh &> /dev/null; then
+    echo -e "${RED}Error: GitHub CLI not found. Install: brew install gh${NC}"
+    exit 1
+fi
+
+if ! gh auth status &> /dev/null; then
+    echo -e "${RED}Error: Not authenticated with GitHub. Run: gh auth login${NC}"
+    exit 1
+fi
+
+if ! command -v create-dmg &> /dev/null; then
+    echo -e "${RED}Error: create-dmg not found. Install: brew install create-dmg${NC}"
+    exit 1
+fi
+
+if [[ ! -f "$SPARKLE_SIGN" ]]; then
+    echo -e "${RED}Error: Sparkle not found. Install: brew install --cask sparkle${NC}"
+    exit 1
+fi
+
+if [[ ! -f "$SPARKLE_KEY_FILE" ]]; then
+    echo -e "${YELLOW}Warning: Sparkle private key not found at $SPARKLE_KEY_FILE${NC}"
+    echo "Generate with: /opt/homebrew/Caskroom/sparkle/2.8.1/bin/generate_keys"
+    echo "Then save the private key to $SPARKLE_KEY_FILE"
+fi
+
+echo -e "${GREEN}✓ Prerequisites OK${NC}"
+
+# Create output directory
+OUTPUT_DIR="$RELEASES_DIR/releases/v$VERSION"
+mkdir -p "$OUTPUT_DIR"
+
+# Build the app
+echo -e "\n${YELLOW}Building HomeKit Menu...${NC}"
+cd "$PROJECT_DIR"
+
+# Update version in project (Info.plist)
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $VERSION" "$PROJECT_DIR/HomeKitMenu/Info.plist" 2>/dev/null || \
+    /usr/libexec/PlistBuddy -c "Add :CFBundleShortVersionString string $VERSION" "$PROJECT_DIR/HomeKitMenu/Info.plist"
+
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" "$PROJECT_DIR/HomeKitMenu/Info.plist" 2>/dev/null || \
+    /usr/libexec/PlistBuddy -c "Add :CFBundleVersion string $BUILD_NUMBER" "$PROJECT_DIR/HomeKitMenu/Info.plist"
+
+# Build for Mac Catalyst
+xcodebuild -scheme "HomeKitMenu" \
+    -destination 'platform=macOS,variant=Mac Catalyst' \
+    -configuration Release \
+    clean build \
+    MARKETING_VERSION="$VERSION" \
+    CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+    | grep -E "^(Build|error:|warning:|\*\*)" || true
+
+# Find the built app
+BUILD_DIR=$(xcodebuild -scheme "HomeKitMenu" -destination 'platform=macOS,variant=Mac Catalyst' -configuration Release -showBuildSettings 2>/dev/null | grep -m 1 'BUILT_PRODUCTS_DIR' | awk '{print $3}')
+APP_PATH="$BUILD_DIR/HomeKit Menu.app"
+
+if [[ ! -d "$APP_PATH" ]]; then
+    # Try alternative path
+    APP_PATH="$HOME/Library/Developer/Xcode/DerivedData/HomeKitMenu-*/Build/Products/Release-maccatalyst/HomeKit Menu.app"
+    APP_PATH=$(ls -d $APP_PATH 2>/dev/null | head -1)
+fi
+
+if [[ ! -d "$APP_PATH" ]]; then
+    echo -e "${RED}Error: Built app not found${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ Build complete: $APP_PATH${NC}"
+
+# Sign the app
+echo -e "\n${YELLOW}Signing app with Developer ID...${NC}"
+codesign --force --deep \
+    --sign "$DEVELOPER_ID_APP" \
+    --timestamp --options runtime \
+    "$APP_PATH"
+echo -e "${GREEN}✓ App signed${NC}"
+
+# Create DMG
+echo -e "\n${YELLOW}Creating DMG...${NC}"
+DMG_PATH="$OUTPUT_DIR/HomeKitMenu-$VERSION.dmg"
+
+# Remove old DMG if exists
+rm -f "$DMG_PATH"
+
+create-dmg \
+    --volname "HomeKit Menu $VERSION" \
+    --window-pos 200 120 \
+    --window-size 600 400 \
+    --icon-size 100 \
+    --icon "HomeKit Menu.app" 150 185 \
+    --app-drop-link 450 185 \
+    --hide-extension "HomeKit Menu.app" \
+    "$DMG_PATH" \
+    "$APP_PATH"
+
+echo -e "${GREEN}✓ DMG created: $DMG_PATH${NC}"
+
+# Sign DMG
+echo -e "\n${YELLOW}Signing DMG...${NC}"
+codesign --force --sign "$DEVELOPER_ID_APP" --timestamp "$DMG_PATH"
+echo -e "${GREEN}✓ DMG signed${NC}"
+
+# Notarize (optional)
+if [[ "$SKIP_NOTARIZE" == false ]]; then
+    echo -e "\n${YELLOW}Notarizing DMG...${NC}"
+    echo "This may take several minutes..."
+
+    # Get credentials from environment or keychain
+    APPLE_ID="${APPLE_ID:-}"
+    TEAM_ID="${TEAM_ID:-}"
+    APP_PASSWORD="${APP_SPECIFIC_PASSWORD:-}"
+
+    if [[ -n "$APPLE_ID" && -n "$TEAM_ID" && -n "$APP_PASSWORD" ]]; then
+        xcrun notarytool submit "$DMG_PATH" \
+            --apple-id "$APPLE_ID" \
+            --team-id "$TEAM_ID" \
+            --password "$APP_PASSWORD" \
+            --wait
+
+        xcrun stapler staple "$DMG_PATH"
+        echo -e "${GREEN}✓ Notarization complete${NC}"
+    else
+        echo -e "${YELLOW}Skipping notarization (credentials not set)${NC}"
+        echo "Set APPLE_ID, TEAM_ID, and APP_SPECIFIC_PASSWORD environment variables"
+    fi
+else
+    echo -e "${YELLOW}Skipping notarization (--skip-notarize)${NC}"
+fi
+
+# Sign for Sparkle
+echo -e "\n${YELLOW}Generating Sparkle signature...${NC}"
+if [[ -f "$SPARKLE_KEY_FILE" ]]; then
+    SPARKLE_SIG=$("$SPARKLE_SIGN" "$DMG_PATH" --ed-key-file "$SPARKLE_KEY_FILE" 2>/dev/null | grep 'edSignature=' | cut -d'"' -f2)
+    echo -e "${GREEN}✓ Sparkle signature: $SPARKLE_SIG${NC}"
+else
+    SPARKLE_SIG="SIGNATURE_PLACEHOLDER"
+    echo -e "${YELLOW}Warning: Using placeholder signature (no key file)${NC}"
+fi
+
+# Get file size
+DMG_SIZE=$(stat -f%z "$DMG_PATH")
+
+# Generate release notes
+RELEASE_NOTES="## HomeKit Menu v$VERSION
+
+### What's New
+- Bug fixes and improvements
+
+### Installation
+1. Download the DMG file
+2. Open it and drag HomeKit Menu to Applications
+3. Launch from Applications folder
+
+### Requirements
+- macOS 14.0 or later
+"
+
+# Create GitHub release
+echo -e "\n${YELLOW}Creating GitHub release...${NC}"
+cd "$RELEASES_DIR"
+
+gh release create "v$VERSION" \
+    --repo "$GITHUB_REPO" \
+    --title "HomeKit Menu v$VERSION" \
+    --notes "$RELEASE_NOTES" \
+    "$DMG_PATH"
+
+echo -e "${GREEN}✓ GitHub release created${NC}"
+
+# Update appcast
+echo -e "\n${YELLOW}Updating appcast...${NC}"
+APPCAST_FILE="$RELEASES_DIR/appcast/release.xml"
+PUB_DATE=$(date -R)
+DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/v$VERSION/HomeKitMenu-$VERSION.dmg"
+
+# Create new item entry
+NEW_ITEM="        <item>
+            <title>HomeKit Menu v$VERSION (build $BUILD_NUMBER)</title>
+            <sparkle:releaseNotesLink>https://github.com/$GITHUB_REPO/releases/tag/v$VERSION</sparkle:releaseNotesLink>
+            <pubDate>$PUB_DATE</pubDate>
+            <enclosure
+                url=\"$DOWNLOAD_URL\"
+                sparkle:version=\"$BUILD_NUMBER\"
+                sparkle:shortVersionString=\"$VERSION\"
+                length=\"$DMG_SIZE\"
+                type=\"application/octet-stream\"
+                sparkle:edSignature=\"$SPARKLE_SIG\"
+            />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>"
+
+# Insert before </channel>
+sed -i '' "s|</channel>|$NEW_ITEM\n    </channel>|" "$APPCAST_FILE"
+
+echo -e "${GREEN}✓ Appcast updated${NC}"
+
+# Commit and push appcast
+echo -e "\n${YELLOW}Pushing appcast update...${NC}"
+cd "$RELEASES_DIR"
+git add -A
+git commit -m "Release v$VERSION" || true
+git push
+
+echo -e "${GREEN}✓ Appcast pushed${NC}"
+
+echo -e "\n${BLUE}═══════════════════════════════════════════════════════════${NC}"
+echo -e "${GREEN}✅ Release v$VERSION complete!${NC}"
+echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
+echo ""
+echo "📦 DMG: $DMG_PATH"
+echo "🔗 Release: https://github.com/$GITHUB_REPO/releases/tag/v$VERSION"
+echo "📡 Appcast: $APPCAST_URL"
+echo ""
+echo -e "${YELLOW}Next steps:${NC}"
+echo "1. Enable GitHub Pages on $GITHUB_REPO (Settings → Pages → main branch)"
+echo "2. Test update by running older version and clicking 'Check for Updates'"
