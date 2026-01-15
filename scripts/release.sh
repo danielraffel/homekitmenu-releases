@@ -2,7 +2,11 @@
 set -euo pipefail
 
 # HomeKit Menu Release Script
-# Usage: ./release.sh [version] [--skip-notarize]
+# Usage: ./release.sh <version> [--local] [--skip-notarize]
+#
+# Options:
+#   --local          Build only, don't push to GitHub or update appcast
+#   --skip-notarize  Skip Apple notarization step
 #
 # Prerequisites:
 # - Xcode command line tools
@@ -25,30 +29,56 @@ RELEASES_DIR="$HOME/Code/homekitmenu-releases"
 GITHUB_REPO="danielraffel/homekitmenu-releases"
 APPCAST_URL="https://www.generouscorp.com/homekitmenu-releases/appcast/release.xml"
 
-# Signing identities - update these with your actual identities
-DEVELOPER_ID_APP="Developer ID Application: Daniel Raffel"
-
 # Sparkle tools
 SPARKLE_SIGN="/opt/homebrew/Caskroom/sparkle/2.8.1/bin/sign_update"
 SPARKLE_KEY_FILE="$HOME/.sparkle_private_key"
 
+# Load environment variables from .env if it exists
+ENV_FILE="$RELEASES_DIR/.env"
+if [[ -f "$ENV_FILE" ]]; then
+    set -a
+    source "$ENV_FILE"
+    set +a
+fi
+
+# Use APP_CERT if set, otherwise fall back to default
+DEVELOPER_ID_APP="${APP_CERT:-Developer ID Application: Daniel Raffel (95CX6P84C4)}"
+
 # Parse arguments
-VERSION="${1:-}"
+VERSION=""
 SKIP_NOTARIZE=false
+LOCAL_ONLY=false
 
 for arg in "$@"; do
     case $arg in
         --skip-notarize)
             SKIP_NOTARIZE=true
-            shift
+            ;;
+        --local)
+            LOCAL_ONLY=true
+            ;;
+        *)
+            if [[ -z "$VERSION" && "$arg" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                VERSION="$arg"
+            elif [[ -z "$VERSION" && ! "$arg" =~ ^-- ]]; then
+                VERSION="$arg"
+            fi
             ;;
     esac
 done
 
 if [[ -z "$VERSION" ]]; then
     echo -e "${RED}Error: Version required${NC}"
-    echo "Usage: $0 <version> [--skip-notarize]"
-    echo "Example: $0 1.0.0"
+    echo "Usage: $0 <version> [--local] [--skip-notarize]"
+    echo ""
+    echo "Options:"
+    echo "  --local          Build only, don't push to GitHub or update appcast"
+    echo "  --skip-notarize  Skip Apple notarization step"
+    echo ""
+    echo "Examples:"
+    echo "  $0 1.0.0              # Full release with notarization"
+    echo "  $0 1.0.0 --local      # Local build only"
+    echo "  $0 1.0.0 --skip-notarize  # Release without notarization"
     exit 1
 fi
 
@@ -62,21 +92,29 @@ fi
 IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 BUILD_NUMBER=$((MAJOR * 10000 + MINOR * 100 + PATCH))
 
+# Display mode
+MODE="Release"
+[[ "$LOCAL_ONLY" == true ]] && MODE="Local Build"
+[[ "$SKIP_NOTARIZE" == true ]] && MODE="$MODE (skip notarize)"
+
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
-echo -e "${BLUE}  HomeKit Menu Release v$VERSION (Build $BUILD_NUMBER)${NC}"
+echo -e "${BLUE}  HomeKit Menu v$VERSION (Build $BUILD_NUMBER)${NC}"
+echo -e "${BLUE}  Mode: $MODE${NC}"
 echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
 
 # Check prerequisites
 echo -e "\n${YELLOW}Checking prerequisites...${NC}"
 
-if ! command -v gh &> /dev/null; then
-    echo -e "${RED}Error: GitHub CLI not found. Install: brew install gh${NC}"
-    exit 1
-fi
+if [[ "$LOCAL_ONLY" == false ]]; then
+    if ! command -v gh &> /dev/null; then
+        echo -e "${RED}Error: GitHub CLI not found. Install: brew install gh${NC}"
+        exit 1
+    fi
 
-if ! gh auth status &> /dev/null; then
-    echo -e "${RED}Error: Not authenticated with GitHub. Run: gh auth login${NC}"
-    exit 1
+    if ! gh auth status &> /dev/null; then
+        echo -e "${RED}Error: Not authenticated with GitHub. Run: gh auth login${NC}"
+        exit 1
+    fi
 fi
 
 if ! command -v create-dmg &> /dev/null; then
@@ -91,8 +129,7 @@ fi
 
 if [[ ! -f "$SPARKLE_KEY_FILE" ]]; then
     echo -e "${YELLOW}Warning: Sparkle private key not found at $SPARKLE_KEY_FILE${NC}"
-    echo "Generate with: /opt/homebrew/Caskroom/sparkle/2.8.1/bin/generate_keys"
-    echo "Then save the private key to $SPARKLE_KEY_FILE"
+    echo "Export with: /opt/homebrew/Caskroom/sparkle/2.8.1/bin/generate_keys -x ~/.sparkle_private_key"
 fi
 
 echo -e "${GREEN}✓ Prerequisites OK${NC}"
@@ -176,23 +213,18 @@ if [[ "$SKIP_NOTARIZE" == false ]]; then
     echo -e "\n${YELLOW}Notarizing DMG...${NC}"
     echo "This may take several minutes..."
 
-    # Get credentials from environment or keychain
-    APPLE_ID="${APPLE_ID:-}"
-    TEAM_ID="${TEAM_ID:-}"
-    APP_PASSWORD="${APP_SPECIFIC_PASSWORD:-}"
-
-    if [[ -n "$APPLE_ID" && -n "$TEAM_ID" && -n "$APP_PASSWORD" ]]; then
+    if [[ -n "${APPLE_ID:-}" && -n "${TEAM_ID:-}" && -n "${APP_SPECIFIC_PASSWORD:-}" ]]; then
         xcrun notarytool submit "$DMG_PATH" \
             --apple-id "$APPLE_ID" \
             --team-id "$TEAM_ID" \
-            --password "$APP_PASSWORD" \
+            --password "$APP_SPECIFIC_PASSWORD" \
             --wait
 
         xcrun stapler staple "$DMG_PATH"
         echo -e "${GREEN}✓ Notarization complete${NC}"
     else
-        echo -e "${YELLOW}Skipping notarization (credentials not set)${NC}"
-        echo "Set APPLE_ID, TEAM_ID, and APP_SPECIFIC_PASSWORD environment variables"
+        echo -e "${YELLOW}Skipping notarization (credentials not set in .env)${NC}"
+        echo "Add APPLE_ID, TEAM_ID, and APP_SPECIFIC_PASSWORD to $ENV_FILE"
     fi
 else
     echo -e "${YELLOW}Skipping notarization (--skip-notarize)${NC}"
@@ -210,6 +242,24 @@ fi
 
 # Get file size
 DMG_SIZE=$(stat -f%z "$DMG_PATH")
+
+# Local build ends here
+if [[ "$LOCAL_ONLY" == true ]]; then
+    echo -e "\n${BLUE}═══════════════════════════════════════════════════════════${NC}"
+    echo -e "${GREEN}✅ Local build v$VERSION complete!${NC}"
+    echo -e "${BLUE}═══════════════════════════════════════════════════════════${NC}"
+    echo ""
+    echo "📦 DMG: $DMG_PATH"
+    echo "📏 Size: $DMG_SIZE bytes"
+    echo "🔐 Sparkle signature: $SPARKLE_SIG"
+    echo ""
+    echo -e "${YELLOW}To install locally:${NC}"
+    echo "  open \"$DMG_PATH\""
+    echo ""
+    echo -e "${YELLOW}To do a full release:${NC}"
+    echo "  $0 $VERSION"
+    exit 0
+fi
 
 # Generate release notes
 RELEASE_NOTES="## HomeKit Menu v$VERSION
@@ -282,6 +332,6 @@ echo "📦 DMG: $DMG_PATH"
 echo "🔗 Release: https://github.com/$GITHUB_REPO/releases/tag/v$VERSION"
 echo "📡 Appcast: $APPCAST_URL"
 echo ""
-echo -e "${YELLOW}Next steps:${NC}"
-echo "1. Enable GitHub Pages on $GITHUB_REPO (Settings → Pages → main branch)"
-echo "2. Test update by running older version and clicking 'Check for Updates'"
+echo -e "${YELLOW}Test the update:${NC}"
+echo "1. Install an older version"
+echo "2. Click 'Check for Updates' in the menu bar"
