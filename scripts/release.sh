@@ -175,13 +175,21 @@ fi
 
 echo -e "${GREEN}✓ Build complete: $APP_PATH${NC}"
 
-# Sign the app
+# Sign the app with entitlements
 echo -e "\n${YELLOW}Signing app with Developer ID...${NC}"
+ENTITLEMENTS_FILE="$PROJECT_DIR/HomeKitMenu/HomeKitMenu.entitlements"
+
+if [[ ! -f "$ENTITLEMENTS_FILE" ]]; then
+    echo -e "${RED}Error: Entitlements file not found at $ENTITLEMENTS_FILE${NC}"
+    exit 1
+fi
+
 codesign --force --deep \
     --sign "$DEVELOPER_ID_APP" \
+    --entitlements "$ENTITLEMENTS_FILE" \
     --timestamp --options runtime \
     "$APP_PATH"
-echo -e "${GREEN}✓ App signed${NC}"
+echo -e "${GREEN}✓ App signed with entitlements${NC}"
 
 # Create DMG
 echo -e "\n${YELLOW}Creating DMG...${NC}"
