@@ -5,5 +5,19 @@
         <link>https://www.generouscorp.com/homekitmenu-releases/appcast/release.xml</link>
         <description>Release updates for HomeKit Menu</description>
         <language>en</language>
+        <item>
+            <title>HomeKit Menu v1.0.0 (build 10000)</title>
+            <sparkle:releaseNotesLink>https://github.com/danielraffel/homekitmenu-releases/releases/tag/v1.0.0</sparkle:releaseNotesLink>
+            <pubDate>Tue, 14 Jan 2025 18:53:00 -0800</pubDate>
+            <enclosure
+                url="https://github.com/danielraffel/homekitmenu-releases/releases/download/v1.0.0/HomeKitMenu-1.0.0.dmg"
+                sparkle:version="10000"
+                sparkle:shortVersionString="1.0.0"
+                length="399736"
+                type="application/octet-stream"
+                sparkle:edSignature="apsw6MeUllKugpTehRE7/FGeI/6YaQ/iHsNb5Hdri7BrG35iMc8jYOkH0wm0AMoZ3hJdvJ7cddQyAgqxRg+DAg=="
+            />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
     </channel>
 </rss>

@@ -297,24 +297,30 @@ APPCAST_FILE="$RELEASES_DIR/appcast/release.xml"
 PUB_DATE=$(date -R)
 DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/v$VERSION/HomeKitMenu-$VERSION.dmg"
 
-# Create new item entry
-NEW_ITEM="        <item>
+# Create new item entry in a temp file
+TEMP_ITEM=$(mktemp)
+cat > "$TEMP_ITEM" << EOF
+        <item>
             <title>HomeKit Menu v$VERSION (build $BUILD_NUMBER)</title>
             <sparkle:releaseNotesLink>https://github.com/$GITHUB_REPO/releases/tag/v$VERSION</sparkle:releaseNotesLink>
             <pubDate>$PUB_DATE</pubDate>
             <enclosure
-                url=\"$DOWNLOAD_URL\"
-                sparkle:version=\"$BUILD_NUMBER\"
-                sparkle:shortVersionString=\"$VERSION\"
-                length=\"$DMG_SIZE\"
-                type=\"application/octet-stream\"
-                sparkle:edSignature=\"$SPARKLE_SIG\"
+                url="$DOWNLOAD_URL"
+                sparkle:version="$BUILD_NUMBER"
+                sparkle:shortVersionString="$VERSION"
+                length="$DMG_SIZE"
+                type="application/octet-stream"
+                sparkle:edSignature="$SPARKLE_SIG"
             />
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-        </item>"
+        </item>
+    </channel>
+EOF
 
-# Insert before </channel>
-sed -i '' "s|</channel>|$NEW_ITEM\n    </channel>|" "$APPCAST_FILE"
+# Insert before </channel> using awk
+awk -v item="$(cat "$TEMP_ITEM")" '/<\/channel>/ { print item; next } { print }' "$APPCAST_FILE" > "${APPCAST_FILE}.tmp"
+mv "${APPCAST_FILE}.tmp" "$APPCAST_FILE"
+rm -f "$TEMP_ITEM"
 
 echo -e "${GREEN}✓ Appcast updated${NC}"
 
