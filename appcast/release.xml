@@ -47,5 +47,19 @@
             />
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
         </item>
+        <item>
+            <title>HomeKit Menu v1.0.3 (build 10003)</title>
+            <sparkle:releaseNotesLink>https://github.com/danielraffel/homekitmenu-releases/releases/tag/v1.0.3</sparkle:releaseNotesLink>
+            <pubDate>Wed, 14 Jan 2026 19:40:58 -0800</pubDate>
+            <enclosure
+                url="https://github.com/danielraffel/homekitmenu-releases/releases/download/v1.0.3/HomeKitMenu-1.0.3.dmg"
+                sparkle:version="10003"
+                sparkle:shortVersionString="1.0.3"
+                length="3056459"
+                type="application/octet-stream"
+                sparkle:edSignature="gWUMf0twHenMDtTFlrOMNDmIz5vAuPu60/RFB9/tcMMyYki8LIHHe5srRj/pIlBsfd1LcQueWnma+xPwREdUDA=="
+            />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
     </channel>
 </rss>
