@@ -175,6 +175,11 @@ fi
 
 echo -e "${GREEN}✓ Build complete: $APP_PATH${NC}"
 
+# Remove development provisioning profile (not valid for Developer ID distribution)
+echo -e "\n${YELLOW}Preparing app for Developer ID distribution...${NC}"
+rm -f "$APP_PATH/Contents/embedded.provisionprofile"
+echo -e "${GREEN}✓ Removed development provisioning profile${NC}"
+
 # Sign the app with entitlements
 echo -e "\n${YELLOW}Signing app with Developer ID...${NC}"
 ENTITLEMENTS_FILE="$PROJECT_DIR/HomeKitMenu/HomeKitMenu.entitlements"
