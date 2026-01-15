@@ -6,6 +6,20 @@
         <description>Release updates for HomeKit Menu</description>
         <language>en</language>
         <item>
+            <title>HomeKit Menu v1.0.1 (build 10001)</title>
+            <sparkle:releaseNotesLink>https://github.com/danielraffel/homekitmenu-releases/releases/tag/v1.0.1</sparkle:releaseNotesLink>
+            <pubDate>Tue, 14 Jan 2025 19:00:00 -0800</pubDate>
+            <enclosure
+                url="https://github.com/danielraffel/homekitmenu-releases/releases/download/v1.0.1/HomeKitMenu-1.0.1.dmg"
+                sparkle:version="10001"
+                sparkle:shortVersionString="1.0.1"
+                length="399711"
+                type="application/octet-stream"
+                sparkle:edSignature="fdw2Eb5/RAS/5nedHpkC2HxWMDbTsOcw6RNjLk41WUEd6cEZ5z2ukytY57t4IUDs+TNAgJypYm+aa+alhTNnDg=="
+            />
+            <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+        </item>
+        <item>
             <title>HomeKit Menu v1.0.0 (build 10000)</title>
             <sparkle:releaseNotesLink>https://github.com/danielraffel/homekitmenu-releases/releases/tag/v1.0.0</sparkle:releaseNotesLink>
             <pubDate>Tue, 14 Jan 2025 18:53:00 -0800</pubDate>

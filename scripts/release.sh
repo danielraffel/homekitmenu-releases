@@ -297,10 +297,11 @@ APPCAST_FILE="$RELEASES_DIR/appcast/release.xml"
 PUB_DATE=$(date -R)
 DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/v$VERSION/HomeKitMenu-$VERSION.dmg"
 
-# Create new item entry in a temp file
-TEMP_ITEM=$(mktemp)
-cat > "$TEMP_ITEM" << EOF
-        <item>
+# Insert new item before </channel> using Python (handles multiline reliably)
+python3 << PYEOF
+import sys
+
+new_item = '''        <item>
             <title>HomeKit Menu v$VERSION (build $BUILD_NUMBER)</title>
             <sparkle:releaseNotesLink>https://github.com/$GITHUB_REPO/releases/tag/v$VERSION</sparkle:releaseNotesLink>
             <pubDate>$PUB_DATE</pubDate>
@@ -313,14 +314,16 @@ cat > "$TEMP_ITEM" << EOF
                 sparkle:edSignature="$SPARKLE_SIG"
             />
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-        </item>
-    </channel>
-EOF
+        </item>'''
 
-# Insert before </channel> using awk
-awk -v item="$(cat "$TEMP_ITEM")" '/<\/channel>/ { print item; next } { print }' "$APPCAST_FILE" > "${APPCAST_FILE}.tmp"
-mv "${APPCAST_FILE}.tmp" "$APPCAST_FILE"
-rm -f "$TEMP_ITEM"
+with open("$APPCAST_FILE", "r") as f:
+    content = f.read()
+
+content = content.replace("    </channel>", new_item + "\n    </channel>")
+
+with open("$APPCAST_FILE", "w") as f:
+    f.write(content)
+PYEOF
 
 echo -e "${GREEN}✓ Appcast updated${NC}"
 
